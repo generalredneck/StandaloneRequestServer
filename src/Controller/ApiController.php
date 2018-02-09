@@ -19,11 +19,66 @@ class ApiController extends Controller
             $parametersAsArray = json_decode($content, true);
         }
         if (!empty($parametersAsArray['command']) && method_exists($this, $parametersAsArray['command'])) {
-            return $this->{$parametersAsArray['command']};
+            return $this->{$parametersAsArray['command']}($parametersAsArray, $request);
         } else {
             throw $this->createNotFoundException();
         }
     }
 
+    protected function venueExists(array $parameters, Request $request) {
+
+    }
+
+    protected function venueAccepting(array $parameters, Request $request) {
+
+    }
+
+    protected function submitRequest(array $parameters, Request $request) {
+
+    }
+
+    protected function search(array $parameters, Request $request) {
+
+    }
+
+    protected function clearDatabase(array $parameters, Request $request) {
+
+    }
+
+    protected function clearRequests(array $parameters, Request $request) {
+
+    }
+
+    protected function clearRequest(array $parameters, Request $request) {
+
+    }
+
+    protected function connectionTest(array $parameters, Request $request) {
+
+    }
+
+    protected function addSongs(array $parameters, Request $request) {
+
+    }
+
+    protected function getSerial(array $parameters, Request $request) {
+
+    }
+
+    protected function getAccepting(array $parameters, Request $request) {
+
+    }
+
+    protected function setAccepting(array $parameters, Request $request) {
+
+    }
+
+    protected function getVenues(array $parameters, Request $request) {
+
+    }
+
+    protected function getRequests(array $parameters, Request $request) {
+
+    }
 
 }

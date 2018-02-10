@@ -8,10 +8,10 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
-class ApiController extends Controller
+class ApiV1Controller extends Controller
 {
     /**
-     * @Route("/api", name="api")
+     * @Route("/api/v1", name="apiv1")
      */
     public function index(Request $request)
     {
@@ -148,7 +148,7 @@ class ApiController extends Controller
     protected function getVenues(array $parameters, Request $request) {
         return new JsonResponse([
             'command' => $parameters['command'],
-            'error' => false
+            'error' => false,
             'venues' => [
                 [
                     'venue_id' => 0,

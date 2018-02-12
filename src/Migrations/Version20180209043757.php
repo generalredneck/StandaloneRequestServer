@@ -19,7 +19,6 @@ class Version20180209043757 extends AbstractMigration
         $this->addSql('CREATE TABLE requests (id INTEGER NOT NULL, artist CLOB NOT NULL, title CLOB NOT NULL, singer CLOB NOT NULL, request_time DATETIME NOT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE TABLE songs (id INTEGER NOT NULL, artist CLOB NOT NULL, title CLOB NOT NULL, combined CLOB NOT NULL, PRIMARY KEY(id))');
         $this->addSql('CREATE UNIQUE INDEX UNIQ_BAECB19B47121894 ON songs (combined)');
-        $this->addSql('INSERT INTO settings (id, value) VALUES ("accepting_state", "0")');
     }
 
     public function down(Schema $schema)

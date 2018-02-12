@@ -7,6 +7,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use App\Entity\Setting;
+use App\Entity\Request as SongRequest;
 
 class ApiV1Controller extends Controller
 {
@@ -42,24 +44,42 @@ class ApiV1Controller extends Controller
     }
 
     protected function venueExists(array $parameters, Request $request) {
-        $venue_name = getenv('VENUE_NAME');
         // Looks like the old server used the URLName "none".
         return new JsonResponse([
-            'exists' => !empty($venue_name) && !empty($parameters['venueUrlName']) && $venue_name == $parameters['venueUrlName'],
+            'exists' => !empty($parameters['venueUrlName']) && 'none' == $parameters['venueUrlName'],
             'command' => $parameters['command'],
             'error' => false
         ]);
     }
 
     protected function venueAccepting(array $parameters, Request $request) {
-        return new JsonResponse([
-            'accepting' => true,
-            'command' => $parameters['command'],
-            'error' => false
-        ]);
+        return $this->getAccepting($parameters, $request);
     }
 
     protected function submitRequest(array $parameters, Request $request) {
+        $em = $this->getDoctrine()->getManager();
+        $state = $em->getRepository(Setting::class)->find('accepting_state');
+        if (!$state->value) {
+            return new JsonResponse(
+                ["errorString" => "This venue is not accepting requests right now.", "error" => true],
+                Response::HTTP_UNAUTHORIZED
+            );
+        }
+        $song_id = $parameters['songId'];
+        if (empty($song_id) || !is_int($song_id)) {
+            return new JsonResponse(
+                ["errorString" => "Invalid Song Request", "error" => true],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+        $song = $em->getRepository(Song::class)->find($song_id);
+        $singer_name = $data['singerName'];
+        $song_request = new SongRequest();
+        $song_request->singer = $singer_name;
+        $song_request->artist = $song->artist;
+        $song_request->title = $song->title;
+        $em->persist($song_request);
+        $em->flush();
         return new JsonResponse([
             'success' => true,
             'command' => $parameters['command'],
@@ -76,14 +96,6 @@ class ApiV1Controller extends Controller
     }
 
     protected function clearDatabase(array $parameters, Request $request) {
-        return new JsonResponse([
-            'serial' => 1234,
-            'command' => $parameters['command'],
-            'error' => false
-        ]);
-    }
-
-    protected function clearRequests(array $parameters, Request $request) {
         return new JsonResponse([
             'serial' => 1234,
             'command' => $parameters['command'],
@@ -127,8 +139,9 @@ class ApiV1Controller extends Controller
     }
 
     protected function getAccepting(array $parameters, Request $request) {
+        $state = $this->getDoctrine()->getRepository(Setting::class)->find('accepting_state');
         return new JsonResponse([
-            'accepting' => true,
+            'accepting' => (bool) $state->value,
             'venue_id' => 0,
             'command' => $parameters['command'],
             'error' => false
@@ -136,49 +149,52 @@ class ApiV1Controller extends Controller
     }
 
     protected function setAccepting(array $parameters, Request $request) {
+        $em = $this->getDoctrine()->getManager();
+        $state = $em->getRepository(Setting::class)->find('accepting_state');
+        $state->value = (bool) $parameters['accepting'];
+        $em->flush();
         return new JsonResponse([
-            'accepting' => true,
+            'accepting' => (bool) $state->value,
             'venue_id' => 0,
-            'serial' => 1234,
             'command' => $parameters['command'],
             'error' => false
         ]);
     }
 
     protected function getVenues(array $parameters, Request $request) {
+        $state = $this->getDoctrine()->getRepository(Setting::class)->find('accepting_state');
+        $venue_name = getenv('VENUE_NAME');
         return new JsonResponse([
             'command' => $parameters['command'],
             'error' => false,
             'venues' => [
                 [
                     'venue_id' => 0,
-                    'accepting' => true,
-                    'name' => 'venue name',
+                    'accepting' => (bool) $state->value,
+                    'name' => $venue_name,
                     'url_name' => 'none'
                 ]
             ]
         ]);
-        $venue['venue_id'] = 0;
-        $venue['accepting'] = getAccepting();
-        $venue['name'] = $venueName;
-        $venue['url_name'] = "none";
     }
 
     protected function getRequests(array $parameters, Request $request) {
-        return new JsonResponse([
-            'serial' => 1234,
+        $requests = $this->getDoctrine()->getRepository(Request::class)->findAll();
+        $response_data = [
             'command' => $parameters['command'],
             'error' => false,
-            'requests' => [
-                [
-                    'request_id' => 123,
-                    'artist' => 'artist',
-                    'title' => 'title',
-                    'singer' => 'singer',
-                    'request_time' => 1412332432
-                ]
-            ]
-        ]);
+            'requests' => []
+        ];
+        foreach ($requests as $song_request) {
+            $response_data['requests'][] = [
+                'request_id' => $song_request->id,
+                'artist' => $song_request->artist,
+                'title' => $song_request->title,
+                'singer' => $song_request->singer,
+                'request_time' => $song_request->request_time->getTimestamp(),
+            ];
+        }
+        return new JsonResponse($response_data);
     }
 
 }
